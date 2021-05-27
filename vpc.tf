@@ -1,6 +1,6 @@
 module "network_example_basic_auto_mode" {
   source  = "app.terraform.io/db231/network/google//examples/basic_auto_mode"
-  version = "3.2.2"
+  version = "~> 3.2.2"
   # insert required variables here
   network_name = "mynw543"
   project_id = "gcptraining"
