@@ -12,31 +12,7 @@ provider "google" {
   region  = var.region
 }
 
-resource "google_compute_network" "hashicat" {
-  name                    = "${var.prefix}-vpc-${var.region}"
-  auto_create_subnetworks = false
-}
 
-resource "google_compute_subnetwork" "hashicat" {
-  name          = "${var.prefix}-subnet"
-  region        = var.region
-  network       = google_compute_network.hashicat.self_link
-  ip_cidr_range = var.subnet_prefix
-}
-
-resource "google_compute_firewall" "http-server" {
-  name    = "default-allow-ssh-http"
-  network = google_compute_network.hashicat.self_link
-
-  allow {
-    protocol = "tcp"
-    ports    = ["22", "80"]
-  }
-
-  // Allow traffic from everywhere to instances with an http-server tag
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["http-server"]
-}
 
 resource "tls_private_key" "ssh-key" {
   algorithm = "RSA"
@@ -54,9 +30,7 @@ resource "google_compute_instance" "hashicat" {
   }
 
   network_interface {
-    subnetwork = google_compute_subnetwork.hashicat.self_link
-    access_config {
-    }
+   network = "default"
   }
 
   metadata = {
@@ -86,29 +60,6 @@ resource "null_resource" "configure-cat-app" {
   provisioner "file" {
     source      = "files/"
     destination = "/home/ubuntu/"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      timeout     = "300s"
-      private_key = tls_private_key.ssh-key.private_key_pem
-      host        = google_compute_instance.hashicat.network_interface.0.access_config.0.nat_ip
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt -y update",
-      "sleep 15",
-      "sudo apt -y update",
-      "sudo apt -y install apache2",
-      "sudo systemctl start apache2",
-      "sudo chown -R ubuntu:ubuntu /var/www/html",
-      "chmod +x *.sh",
-      "PLACEHOLDER=${var.placeholder} WIDTH=${var.width} HEIGHT=${var.height} PREFIX=${var.prefix} ./deploy_app.sh",
-      "sudo apt -y install cowsay",
-      "cowsay Mooooooooooo!",
-    ]
 
     connection {
       type        = "ssh"
