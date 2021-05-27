@@ -1,4 +1,4 @@
-module "network_example_basic_auto_mode" {
+module "network" {
   source  = "app.terraform.io/db231/network/google"
   version = "3.2.2"
   # insert required variables here
